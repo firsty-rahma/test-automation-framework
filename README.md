@@ -3,10 +3,18 @@
 I developed this project as part of my journey to learn automation testing with Selenium. I consulted various resources, including documentation, tutorials, and AI assistance, to understand the best practices.
 
 ## Features
-✅ 11 automated test scenarios (more to come)
+✅ 11 automated test scenarios
 ✅ pytest framework with fixtures  
 ✅ Explicit waits for reliability  
 ✅ Clean test structure  
+
+## Current Status
+🔄 **In Progress**
+- [x] Basic Selenium tests
+- [x] Page Object Model structure
+- [ ] API tests (in progress)
+- [ ] CI/CD with GitHub Actions
+- [ ] Comprehensive documentation
 
 ## Test Coverage
 - Add/Remove Elements
