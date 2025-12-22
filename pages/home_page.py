@@ -45,7 +45,7 @@ class HomePage(BasePage):
         """Navigate to Checkboxes page"""
         self.click_element(self.CHECKBOXES_LINK)
     
-    def go_to_key_pressess(self):
+    def go_to_key_presses(self):
         """Navigate to File Download page"""
         self.click_element(self.KEY_PRESSES_LINK)
     
