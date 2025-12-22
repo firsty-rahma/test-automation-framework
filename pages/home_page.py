@@ -2,7 +2,7 @@
 from selenium.webdriver.common.by import By
 from pages.base_page import BasePage
 
-class HomePge(BasePage):
+class HomePage(BasePage):
     # Locators
     ADD_REMOVE_LINK = (By.LINK_TEXT, "Add/Remove Elements")
     DROPDOWN_LINK = (By.LINK_TEXT, "Dropdown")
