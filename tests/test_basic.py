@@ -13,6 +13,7 @@ import os
 import tempfile
 import time
 
+@pytest.mark.legacy
 def test_add_remove_elements(driver, base_url):
     """Test adding and removing elements dynamically"""
     driver.get(base_url)
