@@ -5,3 +5,11 @@ venv/
 # Python
 __pycache__/
 .pytest_cache/
+
+# Reports
+reports/
+
+# Upload Test file
+text.txt
+
+*.crdownload
