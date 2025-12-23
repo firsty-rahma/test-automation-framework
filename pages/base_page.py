@@ -1,3 +1,4 @@
+"""Base page class that all page objects inherit from"""
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
@@ -22,9 +23,13 @@ class BasePage:
         return element
     
     def get_text(self, locator):
-        """Wait for element and get its text"""
+        """Wait for element and get its text - FIXED"""
         element = self.wait.until(EC.visibility_of_element_located(locator))
         return element.text
+    
+    def get_element(self, locator):
+        """Wait for element and return it"""
+        return self.wait.until(EC.presence_of_element_located(locator))
     
     def is_element_visible(self, locator, timeout=None):
         """Check if element is visible"""
