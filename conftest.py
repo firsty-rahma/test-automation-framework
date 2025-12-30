@@ -1,5 +1,4 @@
-# conftest.py - Adding screenshot on failure
-
+# conftest.py - CORRECTED VERSION
 import pytest
 from selenium import webdriver
 import os
@@ -18,7 +17,8 @@ def base_url():
     """Base URL for the test site"""
     return "https://the-internet.herokuapp.com"
 
-# Screenshot on failure hook
+
+# Screenshot on failure hook - FIXED VERSION
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """
@@ -28,56 +28,69 @@ def pytest_runtest_makereport(item, call):
     # Execute all other hooks to obtain the report object
     outcome = yield
     rep = outcome.get_result()
-
-    # Check if the test failed during the "call" phase (actual test execution)
+    
+    # Only capture screenshot during the actual test execution phase (not setup/teardown)
     if rep.when == "call" and rep.failed:
         # Get the driver fixture from the test
-        try:
+        driver = None
+        
+        # Try to get driver from funcargs (works for function-level fixtures)
+        if hasattr(item, 'funcargs'):
             driver = item.funcargs.get('driver', None)
-
-            if driver:
-                # Create screenshote directory if it doesn't exist
+        
+        # Try to get from fixturenames
+        if driver is None and hasattr(item, 'fixturenames'):
+            if 'driver' in item.fixturenames:
+                try:
+                    driver = item.funcargs.get('driver')
+                except:
+                    pass
+        
+        if driver:
+            try:
+                # Create screenshots directory if it doesn't exist
                 screenshots_dir = "screenshots"
                 if not os.path.exists(screenshots_dir):
                     os.makedirs(screenshots_dir)
-
+                    print(f"\n📁 Created directory: {screenshots_dir}")
+                
                 # Generate screenshot filename with timestamp
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                test_name = item.nodeid.replace("::", "_").replace("/", "_")
+                
+                # Clean up test name for filename
+                test_name = item.nodeid.replace("::", "_").replace("/", "_").replace("\\", "_")
                 screenshot_name = f"{test_name}_{timestamp}.png"
                 screenshot_path = os.path.join(screenshots_dir, screenshot_name)
-
+                
                 # Capture screenshot
                 driver.save_screenshot(screenshot_path)
-
-                # Print the screenshot location
+                
+                # Print the screenshot location (visible in console)
                 print(f"\n📸 Screenshot saved: {screenshot_path}")
+                
+                # Verify file was created
+                if os.path.exists(screenshot_path):
+                    file_size = os.path.getsize(screenshot_path)
+                    print(f"✅ Screenshot file created: {file_size} bytes")
+                else:
+                    print(f"❌ Screenshot file not found at {screenshot_path}")
                 
                 # Attach screenshot to HTML report (if using pytest-html)
                 if hasattr(rep, 'extra'):
-                    # Add screenshot to HTML report
-                    html = f'<div><img src="../{screenshot_path}" alt="screenshot" ' \
-                           f'style="width:600px;height:auto;" onclick="window.open(this.src)" ' \
-                           f'style="cursor:pointer;"/></div>'
-                    rep.extra.append(pytest.html.extra.html(html))
-        except Exception as e:
+                    try:
+                        # Add screenshot to HTML report
+                        html = f'<div><img src="../{screenshot_path}" alt="screenshot" ' \
+                               f'style="width:600px;height:auto;" onclick="window.open(this.src)" ' \
+                               f'style="cursor:pointer;"/></div>'
+                        rep.extra.append(pytest.html.extra.html(html))
+                    except Exception as e:
+                        print(f"⚠️  Could not attach to HTML report: {str(e)}")
+                
+            except Exception as e:
                 print(f"\n⚠️  Could not capture screenshot: {str(e)}")
-
-# Optional: Hook to add extra HTML content to reports
-@pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item, call):
-    """Enhanced reporting with extra information"""
-    outcome = yield
-    report = outcome.get_result()
-    
-    # Add extra information for HTML reports
-    if report.when == 'call':
-        # Add test description to report
-        test_doc = item.function.__doc__
-        if test_doc and hasattr(report, 'extra'):
-            report.extra.append(pytest.html.extra.text(test_doc, name="Description"))
-        
-        # Add marker information
-        markers = [marker.name for marker in item.iter_markers()]
-        if markers and hasattr(report, 'extra'):
-            report.extra.append(pytest.html.extra.text(", ".join(markers), name="Test Markers"))
+                import traceback
+                traceback.print_exc()
+        else:
+            print(f"\n⚠️  No driver found for test: {item.nodeid}")
+            print(f"   Available fixtures: {getattr(item, 'fixturenames', [])}")
+            print(f"   Funcargs: {list(getattr(item, 'funcargs', {}).keys())}")
