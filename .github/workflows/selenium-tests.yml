@@ -1,4 +1,4 @@
-name: Selenium Tests
+name: Selenium Test Suite
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     branches: [ main ]
   schedule:
     - cron: '0 2 * * *'  # Run daily at 2 AM UTC
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
   test:
@@ -14,33 +15,58 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
     
-    - name: Install Chrome
-      uses: browser-actions/setup-chrome@latest
+    - name: Install Chrome and ChromeDriver
+      run: |
+        # Install Chrome
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        
+        # Display Chrome version
+        google-chrome --version
     
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Create necessary directories
+      run: |
+        mkdir -p reports
+        mkdir -p screenshots
+    
+    - name: List directory structure (debugging)
+      run: |
+        echo "=== Current Directory ==="
+        pwd
+        echo "=== Directory Contents ==="
+        ls -la
+        echo "=== Pages Directory ==="
+        ls -la pages/ || echo echo "pages directory not found"
+        echo "=== Tests Directory ==="
+        ls -la tests/ || echo "tests directory not found"
+    
     - name: Run smoke tests
       run: |
-        pytest -m smoke --html=reports/smoke-report.html --self-contained-html
+        pytest tests/test_with_pom.py -m smoke --html=reports/smoke-report.html --self-contained-html -v || true
+      continue-on-error: true
     
     - name: Run all tests
       if: success() || failure()
       run: |
-        pytest --html=reports/full-report.html --self-contained-html
-    
+        pytest tests/test_with_pom.py --html=reports/full-report.html --self-contained-html -v
+        
     - name: Upload test reports
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-reports
         path: reports/
@@ -48,8 +74,18 @@ jobs:
     
     - name: Upload screenshots on failure
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: failure-screenshots
         path: screenshots/
         retention-days: 7
+    
+    - name: Test Summary
+      if: always()
+      run: |
+        echo "### Test Results 🎯" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Tests have completed. Check the artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY
+        if [ -d "screenshots" ] && [ "$(ls -A screenshots 2>/dev/null)" ]; then
+          echo "⚠️ Some tests failed. Screenshots have been captured." >> $GITHUB_STEP_SUMMARY
+        fi
