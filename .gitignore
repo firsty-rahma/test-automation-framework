@@ -1,15 +1,39 @@
 # Virtual Enviroment
-.venv/
 venv/
+env/
+ENV/
 
 # Python
 __pycache__/
 .pytest_cache/
+*.py[cod]
+*$py.class
+*.so
+.Python
 
 # Reports
 reports/
+*.html
+
+# Screenshots
+screenshots/
 
 # Upload Test file
-text.txt
-
+test_upload.txt
 *.crdownload
+*.tmp
+*.part
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
