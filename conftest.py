@@ -7,7 +7,14 @@ from datetime import datetime
 @pytest.fixture
 def driver():
     """Create and configure Chrome driver"""
-    driver = webdriver.Chrome()
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--headless=new")  # Headless mode for CI/CD
+    chrome_options.add_argument("--no-sandbox")     # Required for Docker/CI
+    chrome_options.add_argument("--disable-dev-shm-usage")  # Memory optimization
+    chrome_options.add_argument("--disable-gpu")    # No GPU in CI
+    chrome_options.add_argument("--window-size=1920,1080")  # Consistent size
+
+    driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(10)
     yield driver
     driver.quit()
