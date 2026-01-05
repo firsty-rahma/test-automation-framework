@@ -1,3 +1,4 @@
+# .github/workflows/selenium-tests.yml
 name: Selenium Test Suite
 
 on:
@@ -50,7 +51,7 @@ jobs:
         echo "=== Directory Contents ==="
         ls -la
         echo "=== Pages Directory ==="
-        ls -la pages/ || echo echo "pages directory not found"
+        ls -la pages/ || echo "pages directory not found"
         echo "=== Tests Directory ==="
         ls -la tests/ || echo "tests directory not found"
     
@@ -63,7 +64,7 @@ jobs:
       if: success() || failure()
       run: |
         pytest tests/test_with_pom.py --html=reports/full-report.html --self-contained-html -v
-        
+    
     - name: Upload test reports
       if: always()
       uses: actions/upload-artifact@v4
@@ -79,6 +80,7 @@ jobs:
         name: failure-screenshots
         path: screenshots/
         retention-days: 7
+        if-no-files-found: ignore
     
     - name: Test Summary
       if: always()

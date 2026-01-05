@@ -8,7 +8,6 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from config import Config
 from selenium.webdriver.common.by import By
-
 from pages.home_page import HomePage
 from pages.add_remove_page import AddRemovePage
 from pages.dropdown_page import DropdownPage
@@ -128,19 +127,109 @@ class TestFileDownload:
             "download.prompt_for_download": False,
             "download.directory_upgrade": True,
             "safebrowsing.enabled": True,
-            "profile.default_content_settings.popups": 0
+            "profile.default_content_settings.popups": 0,
+            "download.manager.showDownloadStarted": False,  # Don't show download started
+            "browser.download.folderList": 2,  # Custom location
         }
         chrome_options.add_experimental_option("prefs", prefs)
         
-        # Headless mode for CI/CD compatibility
+        # Headless mode for CI/CD compatibility - IMPORTANT for downloads
         chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--window-size=1920,1080")
         
+        # CRITICAL: Enable downloads in headless mode
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        
         download_driver = webdriver.Chrome(options=chrome_options)
+        
+        # CRITICAL: Enable downloads in headless Chrome
+        download_driver.execute_cdp_cmd("Page.setDownloadBehavior", {
+            "behavior": "allow",
+            "downloadPath": download_dir
+        })
+        
         download_driver.implicitly_wait(Config.TIMEOUT)
+        
+        try:
+            # Navigate to download page
+            download_page = FileDownloadPage(download_driver)
+            download_driver.get(f"{base_url}/download")
+            download_page.wait_for_page_load()
+            
+            # Find a text or PDF file
+            target_link = download_page.find_text_or_pdf_file()
+            if target_link is None:
+                target_link = download_page.get_first_download_link()
+            
+            file_name = download_page.get_link_text(target_link)
+            print(f"Attempting to download: {file_name}")
+            
+            # Get initial file list
+            initial_files = set(os.listdir(download_dir))
+            
+            # Click download link
+            download_page.click_download_link(target_link)
+            print("Download link clicked, waiting for file...")
+            
+            # Wait for download to complete - improved logic with longer timeout
+            def wait_for_download_complete(directory, initial_files, timeout=60):
+                """Wait for a new file to appear and be fully downloaded"""
+                end_time = time.time() + timeout
+                
+                while time.time() < end_time:
+                    current_files = set(os.listdir(directory))
+                    new_files = current_files - initial_files
+                    
+                    # Filter out temporary files
+                    completed_files = [f for f in new_files 
+                                     if not f.endswith('.crdownload') 
+                                     and not f.endswith('.tmp')
+                                     and not f.endswith('.part')]
+                    
+                    if completed_files:
+                        # Found a completed file, wait a bit more to ensure it's fully written
+                        time.sleep(3)  # Increased wait time
+                        file_path = os.path.join(directory, completed_files[0])
+                        
+                        # Verify file has content
+                        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                            return file_path, completed_files[0]
+                    
+                    time.sleep(1)
+                    
+                    # Debug: print current files
+                    if int(time.time() - end_time + timeout) % 10 == 0:
+                        print(f"Current files in directory: {os.listdir(directory)}")
+                
+                return None, None
+            
+            downloaded_file_path, downloaded_filename = wait_for_download_complete(
+                download_dir, initial_files, timeout=60
+            )
+            
+            assert downloaded_file_path is not None, \
+                f"Download did not complete within 60 seconds. Files in directory: {os.listdir(download_dir)}"
+            
+            # Verify file size
+            file_size = os.path.getsize(downloaded_file_path)
+            assert file_size > 0, f"Downloaded file is empty (size: {file_size} bytes)"
+            
+            print(f"✅ Successfully downloaded: {downloaded_filename} ({file_size} bytes)")
+            
+        finally:
+            download_driver.quit()
+            # Cleanup
+            try:
+                for file in os.listdir(download_dir):
+                    file_path = os.path.join(download_dir, file)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                os.rmdir(download_dir)
+            except Exception as e:
+                print(f"Cleanup warning: {e}")
         
         try:
             # Navigate to download page
@@ -217,39 +306,39 @@ class TestFileDownload:
                 print(f"Cleanup warning: {e}")
 
 
-    class TestFileUpload:
-        """Test suite for File Upload functionality"""
+class TestFileUpload:
+    """Test suite for File Upload functionality"""
+    
+    @pytest.fixture(autouse=True)
+    def setup(self, driver, base_url):
+        self.home_page = HomePage(driver, base_url)
+        self.upload_page = FileUploadPage(driver)
+        self.home_page.navigate()
+        self.home_page.go_to_file_upload()
+    
+    @pytest.mark.upload
+    def test_file_upload(self):
+        """Test file upload functionality"""
+        file_name = "test_upload.txt"
+        file_path = os.path.join(os.getcwd(), file_name)
         
-        @pytest.fixture(autouse=True)
-        def setup(self, driver, base_url):
-            self.home_page = HomePage(driver, base_url)
-            self.upload_page = FileUploadPage(driver)
-            self.home_page.navigate()
-            self.home_page.go_to_file_upload()
+        # Create test file
+        with open(file_path, 'w') as f:
+            f.write("Test content for file upload")
         
-        @pytest.mark.upload
-        def test_file_upload(self):
-            """Test file upload functionality"""
-            file_name = "test_upload.txt"
-            file_path = os.path.join(os.getcwd(), file_name)
+        try:
+            # Upload file
+            self.upload_page.upload_file(file_path)
+            self.upload_page.click_submit()
             
-            # Create test file
-            with open(file_path, 'w') as f:
-                f.write("Test content for file upload")
+            # Verify upload
+            uploaded_file = self.upload_page.get_uploaded_filename()
+            assert uploaded_file == file_name, \
+                f"Expected {file_name}, but got {uploaded_file}"
             
-            try:
-                # Upload file
-                self.upload_page.upload_file(file_path)
-                self.upload_page.click_submit()
-                
-                # Verify upload
-                uploaded_file = self.upload_page.get_uploaded_filename()
-                assert uploaded_file == file_name, \
-                    f"Expected {file_name}, but got {uploaded_file}"
-                
-            finally:
-                if os.path.exists(file_path):
-                    os.remove(file_path)
+        finally:
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
 
 class TestStatusCodes:
