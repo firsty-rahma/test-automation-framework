@@ -96,13 +96,3 @@ def pytest_runtest_makereport(item, call):
                 print(f"\n⚠️  Could not capture screenshot: {str(e)}")
         else:
             print(f"\n⚠️  No driver found for test: {item.nodeid}")
-
-
-# Add test environment info to Allure
-@pytest.hookimpl(tryfirst=True)
-def pytest_configure(config):
-    """Add environment information to Allure report"""
-    # You can add this dynamically
-    allure_dir = config.option.allure_report_dir
-    if allure_dir and not os.path.exists(allure_dir):
-        os.makedirs(allure_dir)
