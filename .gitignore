@@ -1,24 +1,30 @@
-# Virtual Enviroment
-venv/
-env/
-ENV/
-
 # Python
 __pycache__/
-.pytest_cache/
 *.py[cod]
 *$py.class
 *.so
 .Python
+venv/
+env/
+ENV/
 
-# Reports
+# Pytest
+.pytest_cache/
+.cache/
+
+# Test Reports
 reports/
 *.html
+
+# Allure
+allure-results/
+allure-report/
+.allure/
 
 # Screenshots
 screenshots/
 
-# Upload Test file
+# Temporary files
 test_upload.txt
 *.crdownload
 *.tmp
