@@ -700,7 +700,31 @@ pytest==7.4.3          # Testing framework
 pytest-html==4.1.1     # HTML reports
 pytest-xdist==3.5.0    # Parallel execution
 ```
+## 🌐 Cross-Browser Testing
 
+This framework supports testing across multiple browsers:
+- ✅ **Chrome** (default)
+- ✅ **Firefox**
+- ✅ **Edge**
+
+### Running Tests on Different Browsers
+```bash
+# Chrome (default)
+pytest tests/test_with_pom.py -v
+
+# Firefox
+pytest tests/test_with_pom.py --browser firefox -v
+
+# Edge  
+pytest tests/test_with_pom.py --browser edge -v
+
+# Run smoke tests on specific browser
+pytest -m smoke --browser firefox -v
+```
+
+### CI/CD Matrix Testing
+
+GitHub Actions automatically runs the full test suite on both Chrome and Firefox in parallel, providing comprehensive cross-browser coverage.
 ---
 
 ## 📁 Project Structure

@@ -1,26 +1,123 @@
-# conftest.py - WITH ALLURE INTEGRATION
+# conftest.py - WITH CROSS-BROWSER AND ALLURE SUPPORT
 import pytest
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.edge.service import Service as EdgeService
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 import os
 from datetime import datetime
 import allure
 
+
+def pytest_addoption(parser):
+    """Add command-line options for browser selection"""
+    parser.addoption(
+        "--browser",
+        action="store",
+        default="chrome",
+        help="Browser to run tests on: chrome, firefox, edge"
+    )
+
+
+@pytest.fixture(scope="function")
+def browser_name(request):
+    """Get browser name from command line option"""
+    return request.config.getoption("--browser")
+
+
 @pytest.fixture
-def driver():
-    """Create and configure Chrome driver"""
-    chrome_options = webdriver.ChromeOptions()
+def driver(browser_name):
+    """Create and configure browser driver based on browser_name"""
+    driver = None
     
-    # Add arguments for headless mode and CI/CD compatibility
-    chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920,1080")
+    # Check if running in CI environment
+    is_ci = os.getenv('CI') == 'true'
     
-    driver = webdriver.Chrome(options=chrome_options)
+    # Chrome configuration
+    if browser_name.lower() == "chrome":
+        chrome_options = webdriver.ChromeOptions()
+        
+        # IMPORTANT: Set Chrome binary location for local testing
+        if not is_ci:
+            # Your Chrome for Testing location
+            chrome_path = r"C:\Users\Nisa\Downloads\chrome-win64\chrome.exe"
+            if os.path.exists(chrome_path):
+                chrome_options.binary_location = chrome_path
+                print(f"✅ Using Chrome at: {chrome_path}")
+        
+        # Only add headless in CI/CD
+        if is_ci:
+            chrome_options.add_argument("--headless=new")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--disable-gpu")
+        
+        chrome_options.add_argument("--window-size=1920,1080")
+        
+        # Get ChromeDriver with specific version matching Chrome 142
+        try:
+            service = ChromeService(ChromeDriverManager(driver_version="142.0.7444.61").install())
+        except:
+            # Fallback to latest
+            service = ChromeService(ChromeDriverManager(driver_version="latest").install())
+        
+        driver = webdriver.Chrome(
+            service=service,
+            options=chrome_options
+        )
+        allure.attach("Chrome", name="Browser", attachment_type=allure.attachment_type.TEXT)
+    
+    # Firefox configuration
+    elif browser_name.lower() == "firefox":
+        firefox_options = webdriver.FirefoxOptions()
+        
+        # Only add headless in CI/CD
+        if is_ci:
+            firefox_options.add_argument("--headless")
+        
+        firefox_options.add_argument("--width=1920")
+        firefox_options.add_argument("--height=1080")
+        
+        driver = webdriver.Firefox(
+            service=FirefoxService(GeckoDriverManager().install()),
+            options=firefox_options
+        )
+        allure.attach("Firefox", name="Browser", attachment_type=allure.attachment_type.TEXT)
+    
+    # Edge configuration
+    elif browser_name.lower() == "edge":
+        edge_options = webdriver.EdgeOptions()
+        
+        # Only add headless in CI/CD
+        if is_ci:
+            edge_options.add_argument("--headless")
+            edge_options.add_argument("--no-sandbox")
+            edge_options.add_argument("--disable-dev-shm-usage")
+            edge_options.add_argument("--disable-gpu")
+        
+        edge_options.add_argument("--window-size=1920,1080")
+        
+        driver = webdriver.Edge(
+            service=EdgeService(EdgeChromiumDriverManager().install()),
+            options=edge_options
+        )
+        allure.attach("Edge", name="Browser", attachment_type=allure.attachment_type.TEXT)
+    
+    else:
+        raise ValueError(f"Unsupported browser: {browser_name}")
+    
     driver.implicitly_wait(10)
+    
+    # Attach browser info to Allure
+    allure.dynamic.parameter("Browser", browser_name)
+    
     yield driver
+    
     driver.quit()
+
 
 @pytest.fixture
 def base_url():
