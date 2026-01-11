@@ -81,10 +81,29 @@ def driver(browser_name):
         firefox_options.add_argument("--width=1920")
         firefox_options.add_argument("--height=1080")
         
-        driver = webdriver.Firefox(
-            service=FirefoxService(GeckoDriverManager().install()),
-            options=firefox_options
-        )
+        # Firefox preferences for better CI/CD performance
+        firefox_options.set_preference("browser.startup.page", 0)
+        firefox_options.set_preference("browser.cache.disk.enable", False)
+        firefox_options.set_preference("browser.cache.memory.enable", False)
+        firefox_options.set_preference("browser.cache.offline.enable", False)
+        firefox_options.set_preference("network.http.use-cache", False)
+        
+        # Increase timeout for CI/CD
+        firefox_options.timeouts = {'implicit': 30000, 'pageLoad': 60000, 'script': 60000}
+        
+        try:
+            service = FirefoxService(GeckoDriverManager().install())
+            # Increase service timeout
+            service.service_args = ['--log', 'debug']
+            
+            driver = webdriver.Firefox(
+                service=service,
+                options=firefox_options
+            )
+        except Exception as e:
+            print(f"⚠️ Firefox initialization error: {e}")
+            raise
+        
         allure.attach("Firefox", name="Browser", attachment_type=allure.attachment_type.TEXT)
     
     # Edge configuration
@@ -109,7 +128,14 @@ def driver(browser_name):
     else:
         raise ValueError(f"Unsupported browser: {browser_name}")
     
-    driver.implicitly_wait(10)
+    # Set implicit wait - longer for Firefox
+    if browser_name.lower() == "firefox":
+        driver.implicitly_wait(30)
+    else:
+        driver.implicitly_wait(10)
+    
+    # Set page load timeout
+    driver.set_page_load_timeout(60)
     
     # Attach browser info to Allure
     allure.dynamic.parameter("Browser", browser_name)
