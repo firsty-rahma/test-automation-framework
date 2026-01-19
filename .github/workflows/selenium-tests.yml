@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chrome]  # Only Chrome for now, Firefox is flaky in CI
+        browser: [chrome, firefox]  # Only Chrome for now, Firefox is flaky in CI
     
     name: Test on ${{ matrix.browser }}
     
