@@ -214,14 +214,20 @@ class TestFileDownload:
                 download_page.click_download_link(target_link)
                 print("Download link clicked, waiting for file...")
                 
-                # Wait for download to complete - FIXED VERSION
+                # Wait for download to complete - PROPER POLLING APPROACH
+                # NOTE: File downloads are OS-level operations, not browser events,
+                # so polling the filesystem is appropriate here (not an arbitrary wait)
                 downloaded_file_path = None
                 downloaded_filename = None
                 timeout = 30
+                poll_interval = 0.5
                 end_time = time.time() + timeout
                 
+                previous_size = -1
+                stable_count = 0
+
                 while time.time() < end_time:
-                    time.sleep(1)  # Wait before checking
+                    time.sleep(poll_interval)  # Acceptable for filesystem polling
                     
                     current_files = set(os.listdir(download_dir))
                     new_files = current_files - initial_files
@@ -238,16 +244,25 @@ class TestFileDownload:
                         
                         # Wait for file to finish writing
                         if os.path.exists(file_path):
-                            time.sleep(2)  # Extra wait to ensure file is complete
-                            
                             # Check file size
                             try:
-                                file_size = os.path.getsize(file_path)
-                                if file_size >= 0:  # Accept any size including 0 for empty test files
-                                    downloaded_file_path = file_path
-                                    downloaded_filename = completed_files[0]
-                                    print(f"File found: {downloaded_filename} ({file_size} bytes)")
-                                    break
+                                current_size = os.path.getsize(file_path)
+                                
+                                # Check if file size is stable (download complete)
+                                if current_size == previous_size and current_size >= 0:
+                                    stable_count += 1
+
+                                # File size stable for 3 checks (1.5 seconds) = download complete
+                                    if stable_count >= 3:
+                                        downloaded_file_path = file_path
+                                        downloaded_filename = completed_files[0]
+                                        print(f"File found: {downloaded_filename} ({current_size} bytes)")
+                                        break
+                                else:
+                                    stable_count = 0
+
+                                previous_size = current_size
+                                
                             except OSError:
                                 # File might still be writing
                                 continue

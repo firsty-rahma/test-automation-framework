@@ -31,9 +31,14 @@ class FileDownloadPage(BasePage):
         return links[0] if links else None
     
     def click_download_link(self, link_element):
-        """Click a download link using JavaScript"""
+        """Click a download link using JavaScript - Now, without arbitary waits"""
+        # Scroll into view and wait for it to be stable
         self.driver.execute_script("arguments[0].scrollIntoView(true);", link_element)
-        time.sleep(0.5)
+        
+        # Wait for element to be clickable (ensures page has settled)
+        self.wait.until(EC.element_to_be_clickable(link_element))
+
+        # Click using JavaScript
         self.driver.execute_script("arguments[0].click();", link_element)
     
     def get_link_text(self, link_element):
