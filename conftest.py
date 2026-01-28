@@ -57,9 +57,9 @@ def driver(browser_name):
         
         chrome_options.add_argument("--window-size=1920,1080")
         
-        # Get ChromeDriver with specific version matching Chrome 142
+        # Get ChromeDriver with specific version matching Chrome 144
         try:
-            service = ChromeService(ChromeDriverManager(driver_version="142.0.7444.61").install())
+            service = ChromeService(ChromeDriverManager(driver_version="144").install())
         except:
             # Fallback to latest
             service = ChromeService(ChromeDriverManager(driver_version="latest").install())
