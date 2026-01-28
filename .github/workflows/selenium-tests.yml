@@ -31,9 +31,9 @@ jobs:
         python-version: '3.11'
     
     - name: Set up Chrome
-      uses: browser-actions/setup-chrome@v2
+      uses: browser-actions/setup-chrome@v1
       with:
-        chrome-version: 142
+        chrome-version: 144
         install-chromedriver: true
     
     - name: Setup Firefox
