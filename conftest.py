@@ -92,7 +92,7 @@ def driver(browser_name):
         firefox_options.timeouts = {'implicit': 30000, 'pageLoad': 60000, 'script': 60000}
         
         try:
-            service = FirefoxService(GeckoDriverManager().install())
+            service = FirefoxService(GeckoDriverManager(version="v0.33.0").install())
             # Increase service timeout
             service.service_args = ['--log', 'debug']
             
