@@ -16,10 +16,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     
@@ -70,7 +70,7 @@ jobs:
     
     - name: Upload Allure Report
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: allure-report
         path: allure-report/
@@ -78,7 +78,7 @@ jobs:
     
     - name: Upload Allure Results
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: allure-results
         path: allure-results/
@@ -86,7 +86,7 @@ jobs:
     
     - name: Upload HTML test reports
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: html-reports
         path: reports/
@@ -94,7 +94,7 @@ jobs:
     
     - name: Upload screenshots on failure
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: failure-screenshots
         path: screenshots/
