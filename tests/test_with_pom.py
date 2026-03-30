@@ -21,6 +21,7 @@ from pages.file_upload_page import FileUploadPage
 from pages.status_codes_page import StatusCodesPage
 from pages.key_presses_page import KeyPressesPage
 from pages.basic_auth_page import BasicAuthPage
+from pages.ab_testing import ABTestingPage
 
 @allure.feature("Dynamic Elements")
 @allure.story("Add and Remove Elements")
@@ -76,6 +77,35 @@ class TestBasicAuth:
             page_text = auth_page.get_page_text()
             assert "congratulations" in page_text, \
                 "Should see success message after authentication"
+
+@allure.feature("Functional Testing")
+@allure.story("A/B Testing")
+class TestAB:
+    """Test suite for AB Testing"""
+    @pytest.fixture(autouse=True)
+    def setup(self, driver, base_url):
+        self.home_page = HomePage(driver, base_url)
+        self.ab_testing_page = ABTestingPage(driver)
+        self.home_page.navigate()
+        self.home_page.go_to_ab_testing()
+
+    @allure.title("A/B Testing with cookie")
+    @allure.description("Verify changed text after forging an opt-out cookie")
+    @allure.severity(allure.severity_level.NORMAL)
+    @pytest.mark.smoke
+    def test_forging_cookie(self):
+        """Test forging cookie"""
+        with allure.step("Add cookie until the text changed"):
+            self.ab_testing_page.test_forge_cookie_on_target_page()
+        
+    @allure.title("A/B Testing with url parameter")
+    @allure.description("Verify changed text after append an opt out parameter to URL")
+    @allure.severity(allure.severity_level.NORMAL)
+    @pytest.mark.smoke
+    def test_url_parameter(self):
+        """Test url parameter"""
+        with allure.step("Append an opt out parameter to URL"):
+            self.ab_testing_page.test_forge_cookie_on_target_page()
 
 @allure.feature("Form Controls")
 @allure.story("Dropdown Selection")
@@ -198,10 +228,10 @@ class TestFileDownload:
                 download_page.wait_for_page_load()
             
             with allure.step("Find downloadable file"):
-                target_link = download_page.find_text_or_pdf_file()
+                target_link = download_page.find_a_file()
                 if target_link is None:
                     target_link = download_page.get_first_download_link()
-                
+
                 file_name = download_page.get_link_text(target_link)
                 allure.attach(file_name, name="Target File", attachment_type=allure.attachment_type.TEXT)
                 print(f"Attempting to download: {file_name}")
