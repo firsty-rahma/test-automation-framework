@@ -12,6 +12,7 @@ class HomePage(BasePage):
     CHECKBOXES_LINK = (By.LINK_TEXT, "Checkboxes")
     KEY_PRESSES_LINK = (By.LINK_TEXT, "Key Presses")
     MULTIPLE_WINDOWS_LINK = (By.LINK_TEXT, "Multiple Windows")
+    AB_TESTING_LINK = (By.LINK_TEXT, "A/B Testing")
 
     def __init__(self, driver, base_url):
         super().__init__(driver)
@@ -21,6 +22,10 @@ class HomePage(BasePage):
         """Navigate to home page"""
         self.driver.get(self.base_url)
     
+    def go_to_ab_testing(self):
+        """Navigate to A/B Testing"""
+        self.click_element(self.AB_TESTING_LINK)
+        
     def go_to_add_remove_elements(self):
         """Navigate to Add/Remove Elements page"""
         self.click_element(self.ADD_REMOVE_LINK)
