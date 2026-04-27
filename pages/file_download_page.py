@@ -20,7 +20,7 @@ class FileDownloadPage(BasePage):
         """Find a random file link, return None if not found"""
         links = self.get_all_download_links()
         link_list = [link.text.lower() for link in links]
-        return random.choice(link_list) if link_list else None
+        return random.choice(link_list) if link_list else self.get_first_download_link()
         
     def get_first_download_link(self):
         """Get the first download link"""
